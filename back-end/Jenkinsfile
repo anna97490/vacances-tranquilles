@@ -1,0 +1,54 @@
+pipeline {
+    agent any  // Utiliser n'importe quel agent disponible pour l'exécution du pipeline
+
+    environment {
+        // Variables d'environnement
+        MAVEN_HOME = tool name: 'Maven', type: 'Tool'  // Utilise l'outil Maven installé dans Jenkins
+        JAVA_HOME = tool name: 'JDK 11', type: 'Tool'  // Utilise Java 11
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                // Cloner le repository Git
+                git 'https://github.com/ton-utilisateur/ton-repository.git'  // Remplace par ton URL de repository
+            }
+        }
+
+        stage('Build') {
+            steps {
+                script {
+                    // Compiler le projet avec Maven
+                    sh "'${MAVEN_HOME}/bin/mvn' clean install -DskipTests"  // Compilation sans exécuter les tests
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                script {
+                    // Exécuter les tests avec Maven
+                    sh "'${MAVEN_HOME}/bin/mvn' test"  // Exécuter les tests unitaires
+                }
+            }
+        }
+
+        stage('Build JAR') {
+            steps {
+                script {
+                    // Construire le fichier JAR de l'application Spring Boot
+                    sh "'${MAVEN_HOME}/bin/mvn' package"
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline terminé avec succès!'
+        }
+        failure {
+            echo 'Le pipeline a échoué!'
+        }
+    }
+}

@@ -19,7 +19,7 @@ pipeline {
                 branch 'main' // Vérifie si la branche est 'develop'
             }
             steps {
-
+                sshagent(['my-ssh-credentials-id']) {
                     // Configuration SSH avant de déployer
                     sh '''
                     [ -d ~/.ssh ] || mkdir ~/.ssh && chmod 0700 ~/.ssh
@@ -34,12 +34,12 @@ pipeline {
 
                     // Clonage du dépôt sur le serveur distant
                     sh """
-                    ssh annatheo@manager1 'git clone git@github.com:anna97490/vacances-tranquilles.git ~/${PROJECT_DIR}'
+                    ssh annatheo@manager1 'git clone git@github.com:Theophile-Yvars/MyWebPage.git ~/${PROJECT_DIR}'
                     """
 
                     // Faire un checkout sur la branche 'develop'
                     sh """
-                    ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && git checkout main'
+                    ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && git checkout develop'
                     """
 
                     // Exécuter le script build-all.sh sur le serveur distant
@@ -57,9 +57,9 @@ pipeline {
 
                     // Déploiement avec Docker
                     sh """
-                    ssh annatheo@manager1 'docker stack deploy --compose-file ~/${PROJECT_DIR}/docker-compose.yml vacances-tranquilles'
+                    ssh annatheo@manager1 'docker stack deploy --compose-file ~/${PROJECT_DIR}/docker-compose.yml preprod-my-web-page'
                     """
-
+                }
             }
         }
     }

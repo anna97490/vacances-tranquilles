@@ -13,53 +13,28 @@ pipeline {
             }
         }
 
-        // Déploiement si on est sur main
         stage('Deploy') {
             when {
-                branch 'main' // Vérifie si la branche est 'develop'
+                // Exécuter uniquement si la branche est main ou si la MR cible main
+                expression {
+                    env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'main'
+                }
             }
             steps {
+                echo 'Starting deployment...'
 
-                    // Configuration SSH avant de déployer
-                    sh '''
-                    [ -d ~/.ssh ] || mkdir ~/.ssh && chmod 0700 ~/.ssh
-                    ssh-keyscan -t rsa,dsa manager1 >> ~/.ssh/known_hosts
-                    chmod 644 ~/.ssh/known_hosts
-                    '''
+                // Commandes de déploiement
+                sh '''
+                [ -d ~/.ssh ] || mkdir ~/.ssh && chmod 0700 ~/.ssh
+                ssh-keyscan -t rsa,dsa manager1 >> ~/.ssh/known_hosts
+                chmod 644 ~/.ssh/known_hosts
 
-                    // Connexion SSH et suppression du répertoire existant
-                    sh """
-                    ssh annatheo@manager1 'rm -rf ~/${PROJECT_DIR}'
-                    """
-
-                    // Clonage du dépôt sur le serveur distant
-                    sh """
-                    ssh annatheo@manager1 'git clone git@github.com:anna97490/vacances-tranquilles.git ~/${PROJECT_DIR}'
-                    """
-
-                    // Faire un checkout sur la branche 'develop'
-                    sh """
-                    ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && git checkout main'
-                    """
-
-                    // Exécuter le script build-all.sh sur le serveur distant
-                    sh """
-                    ssh annatheo@manager1 'chown annatheo:annatheo ~/${PROJECT_DIR}/build-all.sh'
-                    """
-
-                    sh """
-                    ssh annatheo@manager1 'chmod +x ~/${PROJECT_DIR}/build-all.sh'
-                    """
-
-                    sh """
-                    ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && ./build-all.sh'
-                    """
-
-                    // Déploiement avec Docker
-                    sh """
-                    ssh annatheo@manager1 'docker stack deploy --compose-file ~/${PROJECT_DIR}/docker-compose.yml vacances-tranquilles'
-                    """
-
+                ssh annatheo@manager1 'rm -rf ~/${PROJECT_DIR}'
+                ssh annatheo@manager1 'git clone git@github.com:anna97490/vacances-tranquilles.git ~/${PROJECT_DIR}'
+                ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && git checkout main'
+                ssh annatheo@manager1 'chmod +x ~/${PROJECT_DIR}/build-all.sh && cd ~/${PROJECT_DIR} && ./build-all.sh'
+                ssh annatheo@manager1 'docker stack deploy --compose-file ~/${PROJECT_DIR}/docker-compose.yml vacances-tranquilles'
+                '''
             }
         }
     }

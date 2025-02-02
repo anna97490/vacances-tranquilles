@@ -1,43 +1,64 @@
 pipeline {
-    agent any  // Utiliser n'importe quel agent disponible pour l'exécution du pipeline
+    agent any
 
     environment {
-        // Variables d'environnement
-        MAVEN_HOME = tool name: 'Maven', type: 'Tool'  // Utilise l'outil Maven installé dans Jenkins
-        JAVA_HOME = tool name: 'JDK 11', type: 'Tool'  // Utilise Java 11
+        PROJECT_DIR = 'jenkins-deploy-vacances-tranquilles' // Répertoire du projet
     }
 
     stages {
         stage('Checkout') {
             steps {
-                // Cloner le repository Git
-                git 'https://github.com/ton-utilisateur/ton-repository.git'  // Remplace par ton URL de repository
+                echo 'Checking out code...'
+                checkout scm
             }
         }
 
-        stage('Build') {
-            steps {
-                script {
-                    // Compiler le projet avec Maven
-                    sh "'${MAVEN_HOME}/bin/mvn' clean install -DskipTests"  // Compilation sans exécuter les tests
-                }
+        // Déploiement si on est sur main
+        stage('Deploy') {
+            when {
+                branch 'main' // Vérifie si la branche est 'develop'
             }
-        }
-
-        stage('Test') {
             steps {
-                script {
-                    // Exécuter les tests avec Maven
-                    sh "'${MAVEN_HOME}/bin/mvn' test"  // Exécuter les tests unitaires
-                }
-            }
-        }
+                sshagent(['my-ssh-credentials-id']) {
+                    // Configuration SSH avant de déployer
+                    sh '''
+                    [ -d ~/.ssh ] || mkdir ~/.ssh && chmod 0700 ~/.ssh
+                    ssh-keyscan -t rsa,dsa manager1 >> ~/.ssh/known_hosts
+                    chmod 644 ~/.ssh/known_hosts
+                    '''
 
-        stage('Build JAR') {
-            steps {
-                script {
-                    // Construire le fichier JAR de l'application Spring Boot
-                    sh "'${MAVEN_HOME}/bin/mvn' package"
+                    // Connexion SSH et suppression du répertoire existant
+                    sh """
+                    ssh annatheo@manager1 'rm -rf ~/${PROJECT_DIR}'
+                    """
+
+                    // Clonage du dépôt sur le serveur distant
+                    sh """
+                    ssh annatheo@manager1 'git clone git@github.com:Theophile-Yvars/MyWebPage.git ~/${PROJECT_DIR}'
+                    """
+
+                    // Faire un checkout sur la branche 'develop'
+                    sh """
+                    ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && git checkout develop'
+                    """
+
+                    // Exécuter le script build-all.sh sur le serveur distant
+                    sh """
+                    ssh annatheo@manager1 'chown annatheo:annatheo ~/${PROJECT_DIR}/build-all.sh'
+                    """
+
+                    sh """
+                    ssh annatheo@manager1 'chmod +x ~/${PROJECT_DIR}/build-all.sh'
+                    """
+
+                    sh """
+                    ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && ./build-all.sh'
+                    """
+
+                    // Déploiement avec Docker
+                    sh """
+                    ssh annatheo@manager1 'docker stack deploy --compose-file ~/${PROJECT_DIR}/docker-compose.yml preprod-my-web-page'
+                    """
                 }
             }
         }
@@ -45,10 +66,16 @@ pipeline {
 
     post {
         success {
-            echo 'Pipeline terminé avec succès!'
+            echo 'Pipeline completed successfully.'
         }
         failure {
-            echo 'Le pipeline a échoué!'
+            echo 'Pipeline failed.'
+        }
+        always {
+            echo 'Cleaning up...'
+            sh '''
+            rm -rf ${VENV_DIR}
+            '''
         }
     }
 }

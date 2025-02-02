@@ -14,12 +14,7 @@ pipeline {
         }
 
         stage('Deploy') {
-            when {
-                // Exécuter uniquement si la branche est main ou si la MR cible main
-                expression {
-                    env.BRANCH_NAME == 'main' || env.CHANGE_TARGET == 'main'
-                }
-            }
+
             steps {
                 echo 'Starting deployment...'
 

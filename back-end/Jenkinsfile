@@ -57,7 +57,7 @@ pipeline {
 
                     // Déploiement avec Docker
                     sh """
-                    ssh annatheo@192.168.1.40 'docker stack deploy --compose-file ~/${PROJECT_DIR}/docker-compose.yml preprod-my-web-page'
+                    ssh annatheo@192.168.1.40 'docker stack deploy --compose-file ~/${PROJECT_DIR}/docker-compose.yml vacances-tranquilles'
                     """
                 }
             }

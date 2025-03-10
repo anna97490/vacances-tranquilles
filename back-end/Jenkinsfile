@@ -68,11 +68,5 @@ pipeline {
         failure {
             echo 'Pipeline failed.'
         }
-        always {
-            echo 'Cleaning up...'
-            sh '''
-            rm -rf ${VENV_DIR}
-            '''
-        }
     }
 }

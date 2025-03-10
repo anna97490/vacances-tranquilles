@@ -1,65 +1,35 @@
 pipeline {
     agent any
 
-    environment {
-        PROJECT_DIR = 'jenkins-deploy-vacances-tranquilles' // Répertoire du projet
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Start') {
             steps {
-                echo 'Checking out code...'
-                checkout scm
+                echo 'Pipeline started.'
             }
         }
 
-        // Déploiement si on est sur main
-        stage('Deploy') {
-            when {
-                branch 'main' // Vérifie si la branche est 'develop'
-            }
+        stage('Test SSH Connection') {
             steps {
-                sshagent(['my-ssh-credentials-id']) {
-                    // Configuration SSH avant de déployer
-                    sh '''
-                    [ -d ~/.ssh ] || mkdir ~/.ssh && chmod 0700 ~/.ssh
-                    ssh-keyscan -t rsa,dsa manager1 >> ~/.ssh/known_hosts
-                    chmod 644 ~/.ssh/known_hosts
-                    '''
+                echo 'Testing SSH connection to GitHub...'
+                sh 'ssh -T git@github.com'
+            }
+        }
 
-                    // Connexion SSH et suppression du répertoire existant
-                    sh """
-                    ssh annatheo@manager1 'rm -rf ~/${PROJECT_DIR}'
-                    """
+        stage('Dummy Checkout') {
+            steps {
+                echo 'Simulating a checkout (no actual code fetched).'
+            }
+        }
 
-                    // Clonage du dépôt sur le serveur distant
-                    sh """
-                    ssh annatheo@manager1 'git clone git@github.com:Theophile-Yvars/MyWebPage.git ~/${PROJECT_DIR}'
-                    """
+        stage('Dummy Build') {
+            steps {
+                echo 'Simulating build step...'
+            }
+        }
 
-                    // Faire un checkout sur la branche 'develop'
-                    sh """
-                    ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && git checkout develop'
-                    """
-
-                    // Exécuter le script build-all.sh sur le serveur distant
-                    sh """
-                    ssh annatheo@manager1 'chown annatheo:annatheo ~/${PROJECT_DIR}/build-all.sh'
-                    """
-
-                    sh """
-                    ssh annatheo@manager1 'chmod +x ~/${PROJECT_DIR}/build-all.sh'
-                    """
-
-                    sh """
-                    ssh annatheo@manager1 'cd ~/${PROJECT_DIR} && ./build-all.sh'
-                    """
-
-                    // Déploiement avec Docker
-                    sh """
-                    ssh annatheo@manager1 'docker stack deploy --compose-file ~/${PROJECT_DIR}/docker-compose.yml preprod-my-web-page'
-                    """
-                }
+        stage('End') {
+            steps {
+                echo 'Pipeline finished.'
             }
         }
     }
@@ -70,12 +40,6 @@ pipeline {
         }
         failure {
             echo 'Pipeline failed.'
-        }
-        always {
-            echo 'Cleaning up...'
-            sh '''
-            rm -rf ${VENV_DIR}
-            '''
         }
     }
 }

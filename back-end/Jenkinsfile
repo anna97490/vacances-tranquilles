@@ -15,9 +15,6 @@ pipeline {
 
         // Déploiement si on est sur main
         stage('Deploy') {
-            when {
-                branch 'main' // Vérifie si la branche est 'develop'
-            }
             steps {
                 sshagent(['my-ssh-credentials-id']) {
                     // Configuration SSH avant de déployer

@@ -4,4 +4,21 @@ services:
   app:
     image: "vacances-tranquilles/back-end:0.0.0"
     ports:
-      - "9191:8082" # Lie le port 8082 du conteneur au port 8082 de l'hôte
+      - "9191:8082" # Lie le port 8082 du conteneur au port 9191 de l'hôte
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/vacances_tranquilles_db
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_DATABASE_PLATFORM: org.hibernate.dialect.PostgreSQLDialect
+    depends_on:
+      - db # Attend que PostgreSQL soit prêt avant de démarrer
+
+  db:
+    image: postgres:latest
+    restart: always
+    environment:
+      POSTGRES_DB: vacances_tranquilles_db
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432" # Expose PostgreSQL sur le port 5432

@@ -9,7 +9,7 @@ function build_dir()  # $1 is the dir to get it
 
 echo "** Building all"
 
-#build_dir "front-end"
+build_dir "front-end"
 build_dir "back-end"
 
 echo "** Done all"
